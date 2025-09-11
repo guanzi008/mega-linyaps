@@ -1,0 +1,24 @@
+name: Build Linglong package
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 使用 linglong-builder-action 执行构建
+      - name: Build with ll-builder
+        uses: myml/linglong-builder-action@v1.0.1
+
+      # 保存构建产物（一般在 linglong/output/ 下）
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linglong-output
+          path: linglong/output/**
