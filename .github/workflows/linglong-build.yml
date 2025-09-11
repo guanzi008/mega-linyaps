@@ -12,6 +12,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 缓存 ll-builder 数据（解决你看到的 "Input required... key" 报错）
+      - name: Cache ll-builder data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/linglong-builder
+          key: ${{ runner.os }}-linglong-${{ hashFiles('**/linglong.yaml', 'linglong/**') }}
+          restore-keys: |
+            ${{ runner.os }}-linglong-
+
       # 使用 linglong-builder-action 执行构建
       - name: Build with ll-builder
         uses: myml/linglong-builder-action@v1.0.1
