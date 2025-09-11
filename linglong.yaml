@@ -1,0 +1,99 @@
+version: "1"
+
+package:
+  id: nz.mega.MEGAsync
+  name: MEGAsync
+  version: 5.15.0.1            # 对应上游 v5.15.0.1_Linux
+  kind: app
+  description: |
+    Official MEGA desktop sync client for Linux (packaged as Linyaps).
+  architecture: x86_64
+  channel: stable
+
+# 程序入口（安装后位于容器内的绝对路径）
+command:
+  - /opt/apps/nz.mega.MEGAsync/files/bin/megasync
+
+# deepin 23 基础环境与 Runtime（含 Qt/DTK）
+base: org.deepin.base/23.1.0
+runtime: org.deepin.runtime.dtk/23.1.0
+
+# 源码与 SDK（跟 AUR 的打包方式一致：把 meganz/sdk 作为外部源并链接到子目录）
+sources:
+  - kind: git
+    url: https://github.com/meganz/MEGAsync.git
+    commit: v5.15.0.1_Linux
+    name: MEGAsync
+  - kind: git
+    url: https://github.com/meganz/sdk.git
+    # 这个提交号在下游打包中验证过，避免新版 SDK 破坏构建
+    commit: f60237a8d46cec993137065d39138fd42c043271
+    name: meganz-sdk
+
+build: |
+  set -euxo pipefail
+  SRC=/project/linglong/sources
+  APP=$SRC/MEGAsync
+  SDK=$SRC/meganz-sdk
+
+  # 让源码使用外部 SDK（与 AUR PKGBUILD 相同做法）
+  rm -rf "$APP/src/MEGASync/mega" || true
+  ln -sfn "../../../meganz-sdk" "$APP/src/MEGASync/mega"
+
+  # 一些发行版会缺少 pdfium 的头文件路径，追加一行以防万一
+  export CXXFLAGS="${CXXFLAGS:-} -DNDEBUG -isystem/usr/include/pdfium"
+
+  cmake -S "$APP" -B "$APP/build" \
+    -G "Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+    -DCMAKE_INSTALL_LIBDIR=${PREFIX}/lib/${TRIPLET} \
+    -DCMAKE_SKIP_INSTALL_RPATH=YES \
+    -DCMAKE_MODULE_PATH="$APP/src/MEGASync/mega/cmake/modules/packages" \
+    -DENABLE_DESKTOP_APP_TESTS=OFF \
+    -DENABLE_DESIGN_TOKENS_IMPORTER=OFF \
+    -Wno-dev
+  cmake --build "$APP/build" --target MEGAsync -j"$(nproc)"
+  cmake --install "$APP/build"
+
+# 用 apt 扩展声明构建期/运行期依赖
+buildext:
+  apt:
+    build_depends:
+      - build-essential
+      - cmake
+      - git
+      - qtbase5-dev
+      - qtdeclarative5-dev
+      - qttools5-dev
+      - qml-module-qtquick-controls
+      - qml-module-qtquick-controls2
+      - qml-module-qtgraphicaleffects
+      - libmediainfo-dev
+      - libzen-dev
+      - libsodium-dev
+      - libuv1-dev
+      - libcrypto++-dev
+      - libssl-dev
+      - libsqlite3-dev
+      - zlib1g-dev
+      - libc-ares-dev
+      - libfreeimage-dev
+      - libpdfium-dev
+      - ffmpeg
+    depends:
+      # Qt/DTK 由 runtime 提供，下面主要是非 Qt 运行库
+      - libmediainfo0v5
+      - libzen0t64
+      - libsodium23
+      - libuv1
+      - libcrypto++8
+      - libssl3
+      - libsqlite3-0
+      - zlib1g
+      - libc-ares2
+      - libfreeimage3
+      - libpdfium
+      - hicolor-icon-theme
+      - curl
+      - libxcb1
