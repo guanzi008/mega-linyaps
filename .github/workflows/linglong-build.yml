@@ -20,14 +20,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show cache key
-        run: echo "CACHE_KEY=${{ runner.os }}-linglong-${{ hashFiles('**/linglong.yaml', 'linglong/**') }}"
+      - name: Show workflow marker
+        run: echo "WORKFLOW_MARKER=v3"
+
+      - name: Compute cache key
+        id: ck
+        env:
+          CALC_KEY: ${{ runner.os }}-linglong-${{ hashFiles('**/linglong.yaml', 'linglong/**') }}
+        run: |
+          echo "CACHE_KEY=${CALC_KEY}"
+          echo "key=${CALC_KEY}" >> "$GITHUB_OUTPUT"
 
       - name: Cache ll-builder data
         uses: actions/cache@v4
         with:
           path: ~/.cache/linglong-builder
-          key: ${{ runner.os }}-linglong-${{ hashFiles('**/linglong.yaml', 'linglong/**') }}
+          key: ${{ steps.ck.outputs.key }}
           restore-keys: |
             ${{ runner.os }}-linglong-
 
