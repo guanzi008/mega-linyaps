@@ -1,51 +1,19 @@
-name: Build Linglong package
-
+name: CI
 on:
   push:
-    branches: [ main ]
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
   workflow_dispatch:
-
-concurrency:
-  group: linglong-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Show workflow marker
-        run: echo "WORKFLOW_MARKER=v3"
-
-      - name: Compute cache key
-        id: ck
-        env:
-          CALC_KEY: ${{ runner.os }}-linglong-${{ hashFiles('**/linglong.yaml', 'linglong/**') }}
-        run: |
-          echo "CACHE_KEY=${CALC_KEY}"
-          echo "key=${CALC_KEY}" >> "$GITHUB_OUTPUT"
-
-      - name: Cache ll-builder data
-        uses: actions/cache@v4
+      - uses: actions/checkout@v4
         with:
-          path: ~/.cache/linglong-builder
-          key: ${{ steps.ck.outputs.key }}
-          restore-keys: |
-            ${{ runner.os }}-linglong-
+          repository: linuxdeepin/linglong-builder-demo
 
-      - name: Build with ll-builder
-        uses: myml/linglong-builder-action@v1.0.1
-
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: linglong-output
-          path: linglong/output/**
-          retention-days: 14
+      - name: ll-builder-build
+        uses: myml/linglong-builder-action@main
